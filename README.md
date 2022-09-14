@@ -1,4 +1,4 @@
-# access-relational-database-with-go
+# relational-database-access-with-go
 
 ### WHAT
 - Implement basic relational database with Go with database/sql package. 
