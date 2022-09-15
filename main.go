@@ -15,7 +15,7 @@ type Album  struct {
   ID      int64
   Title   string
   Artist  string
-  Price   float
+  Price   float32
 }
 
 func main() {
@@ -44,6 +44,28 @@ func main() {
     log.Fatal(pingErr)
   }
   fmt.Println("Connected!")
+
+  albums, err := albumsByArtist("Nina Simone")
+  if err != nil {
+    log.Fatal(err)
+  }
+  fmt.Printf("Albums found: %v\n", albums)
+
+  album, err := albumById(4)
+  if err != nil {
+    log.Fatal(err)
+  }
+  fmt.Printf("Album found: %v\n", album)
+
+  albumID, err := addAlbum(Album{
+    Title:  "The Modern Sound of Betty Carter",
+    Artist: "Betty Carter",
+    Price: 49.99, 
+  })
+  if err != nil {
+    log.Fatal(err)
+  }
+  fmt.Printf("ID of added album: %v\n", albumID)
 }
 
 // Retrieve album(s) by artist name
@@ -73,3 +95,31 @@ func albumsByArtist(name string) ([]Album, error) {
   return albums, nil
 }
 
+// albumById queries for the album with the specified ID.
+func albumById(id int64) (Album, error) {
+  // An album to hold data from the returned row.
+  var album Album
+
+  row := db.QueryRow("SELECT * FROM album WHERE id = ?", id)
+  if err := row.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
+    if err == sql.ErrNoRows {
+      return album, fmt.Errorf("albumById %d: no such album", id)
+    }
+    return album, fmt.Errorf("albumById %d: %v", id, err)
+  }
+  return album, nil
+}
+
+// addAlbum adds the specified album to the record database,
+// returning the album ID of the new entry.
+func addAlbum(album Album) (int64, error) {
+  result, err := db.Exec("INSERT INTO album (title, artist, price) VALUES (?, ?, ?)", album.Title, album.Artist, album.Price)
+  if err != nil {
+    return 0, fmt.Errorf("addAlbum: %v", err)
+  }
+  id, err := result.LastInsertId()
+  if err != nil {
+    return 0, fmt.Errorf("addAlbum: %v", err)
+  }
+  return id, nil
+}
