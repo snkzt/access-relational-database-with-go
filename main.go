@@ -5,6 +5,7 @@ import (
   "fmt"
   "log"
   "os"
+  "errors"
 
   "github.com/go-sql-driver/mysql"
 )
@@ -84,7 +85,8 @@ func albumsByArtist(name string) ([]Album, error) {
   // Loop through rows and assign column data to struct fields with Scan.
   for rows.Next() {
     var album Album
-    if err := rows.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
+    err := rows.Scan(&album.ID, &album.Title, &album.Artist, &album.Price)
+    if err != nil {
       return nil, fmt.Errorf("albumsByArtist %q: %v", name, err)
     }
     albums = append(albums, album)
@@ -101,8 +103,9 @@ func albumById(id int64) (Album, error) {
   var album Album
 
   row := db.QueryRow("SELECT * FROM album WHERE id = ?", id)
-  if err := row.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
-    if err == sql.ErrNoRows {
+  err := row.Scan(&album.ID, &album.Title, &album.Artist, &album.Price)  
+  if err != nil {
+    if errors.Is(err, sql.ErrNoRows) {
       return album, fmt.Errorf("albumById %d: no such album", id)
     }
     return album, fmt.Errorf("albumById %d: %v", id, err)
